@@ -22,6 +22,11 @@ bool d_held = false;    // Estado real de la tecla 'D'
 bool a_scrip = false;   // Estado simulado de la tecla 'A'
 bool d_scrip = false;   // Estado simulado de la tecla 'D'
 
+bool w_held = false;    // Estado real de la tecla 'W'
+bool s_held = false;    // Estado real de la tecla 'S'
+bool w_scrip = false;   // Estado simulado de la tecla 'W'
+bool s_scrip = false;   // Estado simulado de la tecla 'S'
+
 enum layers {
     MAC_BASE,
     WIN_BASE,
@@ -120,6 +125,54 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 }
             }
             return false; // Evita la acción predeterminada de 'D'
+			
+		case KC_W:
+            if (record->event.pressed) {
+                w_held = true;
+                if (s_scrip) {
+                    s_scrip = false;
+                    unregister_code(KC_S);  // Simula la liberación de la tecla 'S'
+                }
+                if (!w_scrip) {
+                    w_scrip = true;
+                    register_code(KC_W);   // Simula la pulsación de la tecla 'W'
+                }
+            } else {
+                w_held = false;
+                if (w_scrip) {
+                    w_scrip = false;
+                    unregister_code(KC_W); // Simula la liberación de la tecla 'W'
+                }
+                if (s_held && !s_scrip) {
+                    s_scrip = true;
+                    register_code(KC_S);   // Simula la pulsación de la tecla 'S'
+                }
+            }
+            return false; // Evita la acción predeterminada de 'W'
+        
+        case KC_S:
+            if (record->event.pressed) {
+                s_held = true;
+                if (w_scrip) {
+                    w_scrip = false;
+                    unregister_code(KC_W); // Simula la liberación de la tecla 'W'
+                }
+                if (!s_scrip) {
+                    s_scrip = true;
+                    register_code(KC_S);   // Simula la pulsación de la tecla 'S'
+                }
+            } else {
+                s_held = false;
+                if (s_scrip) {
+                    s_scrip = false;
+                    unregister_code(KC_S); // Simula la liberación de la tecla 'S'
+                }
+                if (w_held && !w_scrip) {
+                    w_scrip = true;
+                    register_code(KC_W);   // Simula la pulsación de la tecla 'W'
+                }
+            }
+            return false; // Evita la acción predeterminada de 'S'
 
         default:
             return true;  // Procesa todas las otras teclas normalmente
