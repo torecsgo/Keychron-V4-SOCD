@@ -18,8 +18,12 @@
  */
 
 #include QMK_KEYBOARD_H
+#include "timer.h"
+#include "raw_hid.h"
 
+// Variables de configuración
 bool snaptap_activated = false; // Estado del SnapTap
+uint8_t current_mode = 0;       // Modo actual de iluminación (0 = normal, 1 = bandera España)
 
 // Variables globales para manejar el estado de las teclas A y D
 bool a_held = false;    // Estado real de la tecla 'A'
@@ -39,6 +43,10 @@ enum layers {
     _FN2,
     _FN3
 };
+
+// Definición de modos
+#define MODE_NORMAL 0
+#define MODE_FLAG   1
 
 #define KC_TASK LGUI(KC_TAB)
 #define KC_FLXP LGUI(KC_E)
@@ -79,6 +87,60 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         _______, _______,  _______, _______, _______, _______, _______, _______, _______, _______, _______,  _______,            _______,
         _______, _______,  _______,                            _______,                            _______,  _______,  _______,  _______)
 };
+
+
+// Función para manejar iluminación personalizada
+void rgb_matrix_indicators_user(void) {
+    if (current_mode == MODE_FLAG) {
+        // Bandera de España con un efecto "wave" horizontal
+        for (uint8_t y = 0; y < MATRIX_ROWS; y++) {
+            for (uint8_t x = 0; x < MATRIX_COLS; x++) {
+                uint8_t led_index = y * MATRIX_COLS + x;
+                if (y < 2) {
+                    rgb_matrix_set_color(led_index, 255, 0, 0); // Rojo
+                } else if (y == 2) {
+                    rgb_matrix_set_color(led_index, 255, 255, 0); // Amarillo
+                } else {
+                    rgb_matrix_set_color(led_index, 255, 0, 0); // Rojo
+                }
+            }
+        }
+    } else {
+        // Comportamiento estándar
+        rgb_matrix_set_color_all(0, 0, 0); // Apagar todos los LEDs
+    }
+}
+
+
+void raw_hid_receive(uint8_t *data, uint8_t length) {
+    switch (data[0]) {
+        case 0x01: // Cambiar modo de iluminación
+            current_mode = data[1];
+            break;
+        case 0x02: // Modificar estado de SnapTap
+            if (data[1] == 0) {
+                snaptap_activated = false;
+            } else if (data[1] == 1) {
+                snaptap_activated = true;
+            }
+            break;
+        case 0x03: // Consulta del estado actual
+            if (data[1] == 0x01) { // Consultar iluminación
+                uint8_t response[64] = {0};
+                response[0] = 0x01; // Tipo de respuesta: iluminación
+                response[1] = current_mode;
+                raw_hid_send(response, 64);
+            } else if (data[1] == 0x02) { // Consultar SnapTap
+                uint8_t response[64] = {0};
+                response[0] = 0x02; // Tipo de respuesta: SnapTap
+                response[1] = snaptap_activated ? 1 : 0;
+                raw_hid_send(response, 64);
+            }
+            break;
+        default:
+            break;
+    }
+}
 
 // Lógica para manejar el comportamiento de las teclas 'A'/'D' y 'W'/'S'
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
