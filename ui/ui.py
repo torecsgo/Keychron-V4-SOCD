@@ -4,9 +4,11 @@ import hid
 import threading
 import time
 
+# https://github.com/libusb/hidapi/releases/tag/hidapi-0.14.0
 # Configuración del dispositivo HID
-VENDOR_ID = 0x1234  # Cambia esto por el Vendor ID de tu teclado
-PRODUCT_ID = 0x5678  # Cambia esto por el Product ID de tu teclado
+VENDOR_ID = 0x3434  # Vendor ID de tu dispositivo
+PRODUCT_ID = 0x0342  # Product ID de tu dispositivo
+
 
 # Variables globales para el estado del teclado
 current_mode = None
